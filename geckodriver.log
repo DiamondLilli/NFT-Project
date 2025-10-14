@@ -1,0 +1,2 @@
+1760470189441	geckodriver	INFO	Listening on 127.0.0.1:45923
+1760470190415	mozrunner::runner	INFO	Running command: MOZ_CRASHREPORTER="1" MOZ_CRASHREPORTER_NO_REPORT="1" MOZ_CRASHREPORTER_SHUTDOWN="1" "/usr/bin/firefox" "--m ... 80" "--remote-debugging-port" "44117" "--remote-allow-hosts" "localhost" "-no-remote" "-profile" "/tmp/rust_mozprofileVswHPZ"

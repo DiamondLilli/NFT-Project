@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice CAPTCHA Demo</title>
+    <style>
+        /* Your existing CSS remains the same */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .captcha-box {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            border: 2px solid #e9ecef;
+        }
+
+        .challenge-text {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            margin: 5px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .result-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Voice CAPTCHA Demo</h1>
+            <p>Accessible authentication system</p>
+        </div>
+
+        <div class="captcha-box">
+            <div class="challenge-text" id="challengeText">
+                Click "New Challenge" to start
+            </div>
+
+            <div class="input-group">
+                <label for="textResponse">Enter the numbers you hear:</label>
+                <input type="text" id="textResponse" placeholder="Type the numbers...">
+            </div>
+
+            <div style="text-align: center;">
+                <button id="newChallengeBtn" class="btn btn-primary">🔄 New Challenge</button>
+                <button id="verifyBtn" class="btn btn-success">✅ Verify</button>
+                <button id="alternativeBtn" class="btn btn-primary">♿ Alternative Challenge</button>
+            </div>
+
+            <div id="resultMessage" class="result-message hidden"></div>
+        </div>
+
+        <div style="text-align: center; color: #666;">
+            <p>Designed for accessibility - WCAG 2.1 AA Compliant</p>
+        </div>
+    </div>
+
+    <script>
+        class VoiceCaptcha {
+            constructor() {
+                this.currentChallenge = null;
+                this.initializeElements();
+                this.setupEventListeners();
+            }
+
+            initializeElements() {
+                this.elements = {
+                    challengeText: document.getElementById('challengeText'),
+                    textResponse: document.getElementById('textResponse'),
+                    verifyBtn: document.getElementById('verifyBtn'),
+                    newChallengeBtn: document.getElementById('newChallengeBtn'),
+                    alternativeBtn: document.getElementById('alternativeBtn'),
+                    resultMessage: document.getElementById('resultMessage')
+                };
+            }
+
+            setupEventListeners() {
+                this.elements.newChallengeBtn.addEventListener('click', () => this.generateNewChallenge());
+                this.elements.verifyBtn.addEventListener('click', () => this.verifyResponse());
+                this.elements.alternativeBtn.addEventListener('click', () => this.getAlternativeChallenge());
+                
+                // Enter key support
+                this.elements.textResponse.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.verifyResponse();
+                    }
+                });
+            }
+
+            async generateNewChallenge() {
+                try {
+                    // FIXED: Correct endpoint URL
+                    const response = await fetch('http://localhost:5000/api/enhanced/generate-challenge', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ use_dataset: true }) // Changed from 'type' to 'use_dataset'
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    this.currentChallenge = data;
+                    this.elements.challengeText.textContent = data.message;
+                    this.elements.textResponse.value = '';
+                    this.hideResult();
+                    
+                    // Speak the challenge for accessibility
+                    if (data.sequence) {
+                        this.speakChallenge(data.sequence);
+                    } else {
+                        this.speakChallenge("Please listen to the audio challenge");
+                    }
+                    
+                } catch (error) {
+                    console.error('Error details:', error);
+                    this.showResult('Error connecting to server. Make sure the backend is running on port 5000.', 'error');
+                }
+            }
+
+            async getAlternativeChallenge() {
+                try {
+                    const response = await fetch('http://localhost:5000/api/alternative-challenge', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    this.currentChallenge = data;
+                    this.elements.challengeText.textContent = data.message;
+                    this.elements.textResponse.value = '';
+                    this.hideResult();
+                    
+                    this.speakChallenge(data.sequence);
+                    
+                } catch (error) {
+                    console.error('Error details:', error);
+                    this.showResult('Error getting alternative challenge.', 'error');
+                }
+            }
+
+            speakChallenge(sequence) {
+                if ('speechSynthesis' in window) {
+                    const utterance = new SpeechSynthesisUtterance(sequence);
+                    utterance.rate = 0.8; // Slower for clarity
+                    speechSynthesis.speak(utterance);
+                }
+            }
+
+            async verifyResponse() {
+                if (!this.currentChallenge) {
+                    this.showResult('Please generate a challenge first.', 'error');
+                    return;
+                }
+
+                const userResponse = this.elements.textResponse.value.trim();
+                if (!userResponse) {
+                    this.showResult('Please enter your response.', 'error');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('http://localhost:5000/api/verify-response', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            challenge_id: this.currentChallenge.challenge_id,
+                            response: userResponse
+                        })
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        this.showResult('✅ Success! Access granted. You are verified as human.', 'success');
+                    } else {
+                        this.showResult('❌ Access denied. Please try again.', 'error');
+                    }
+
+                } catch (error) {
+                    this.showResult('Error verifying response. Please try again.', 'error');
+                }
+            }
+
+            showResult(message, type) {
+                this.elements.resultMessage.textContent = message;
+                this.elements.resultMessage.className = `result-message ${type}`;
+                this.elements.resultMessage.classList.remove('hidden');
+            }
+
+            hideResult() {
+                this.elements.resultMessage.classList.add('hidden');
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new VoiceCaptcha();
+        });
+    </script>
+</body>
+</html>
