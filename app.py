@@ -318,6 +318,9 @@ def enhanced_generate_challenge():
         response_data['audio_url'] = f'/api/audio/{challenge_id}'
         response_data['audio_type'] = 'pre_recorded'
         response_data['note'] = 'Audio challenge from dataset'
+        # Provide a TTS fallback for accessibility: include the sequence so
+        # browsers can speak the digits if the pre-recorded audio is not played.
+        response_data['sequence'] = challenge_text
     else:
         response_data['note'] = 'Synthetic text challenge with browser text-to-speech'
         response_data['sequence'] = challenge_text  # Include sequence for synthetic
