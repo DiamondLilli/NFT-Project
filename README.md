@@ -75,4 +75,3 @@ Troubleshooting
 - PyAudio install fails: use a prebuilt wheel matching your Python version or install Visual C++ Build Tools.
 - CORS/file access: serve the frontend with `serve.py` rather than opening `index.html` directly so API calls from the browser work.
 
-If you want, I can add a Windows `start_project.bat` that activates `.venv` and runs `run_project.py` automatically.
